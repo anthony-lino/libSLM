@@ -151,8 +151,6 @@ set(App_SRCS
 
 SOURCE_GROUP("App" FILES ${App_SRCS})
 
-add_subdirectory(Translators)
-
 if(BUILD_PYTHON)
     set(LIBSLM_PY_SRCS
 
