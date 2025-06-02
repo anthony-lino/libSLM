@@ -49,7 +49,7 @@ class CMakeBuild(build_ext):
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
                       '-DBUILD_PYTHON=ON']
 
-        cfg = 'Debug' if self.debug else 'Release'
+        cfg = 'Debug'
         build_args = ['--config', cfg]
 
         if platform.system() == "Windows":
