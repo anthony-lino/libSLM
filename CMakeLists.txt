@@ -189,4 +189,4 @@ install(FILES
     DESTINATION include/libSLM
 )
 
-#install(TARGETS SLM DESTINATION lib/libSLM)
+install(TARGETS SLM DESTINATION lib/libSLM)
