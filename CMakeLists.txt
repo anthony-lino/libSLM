@@ -189,4 +189,8 @@ install(FILES
     DESTINATION include/libSLM
 )
 
-install(TARGETS SLM DESTINATION lib/libSLM)
+if(BUILD_PYTHON)
+    install(TARGETS SLM_static DESTINATION lib/libSLM)  # Install static lib for Python
+else()
+    install(TARGETS SLM DESTINATION lib/libSLM)         # Install shared lib otherwise
+endif()
