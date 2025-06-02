@@ -127,12 +127,31 @@ PYBIND11_MODULE(slm, m) {
     layerGeomPyType.def(py::init())
         .def_readwrite("bid", &LayerGeometry::bid)
         .def_readwrite("mid", &LayerGeometry::mid)
-        .def_readwrite("coords", &LayerGeometry::coords)
+        .def_property("coords", 
+            [](LayerGeometry& self) {
+                // Return as numpy array with float32 dtype
+                return py::array_t<float>(
+                    {self.coords.rows(), self.coords.cols()},  // shape
+                    {sizeof(float), sizeof(float) * self.coords.rows()},  // strides (column-major)
+                    self.coords.data(),  // data pointer
+                    py::cast(self)  // parent object to keep alive
+                );
+            },
+            [](LayerGeometry& self, const py::array_t<float>& arr) {
+                // Convert input to float32 if needed and check shape
+                py::array_t<float> arr_f32 = py::array_t<float>::ensure(arr);
+                if (arr_f32.ndim() != 2)
+                    throw std::runtime_error("coords must be a 2D array");
+                
+                // Resize and copy data
+                self.coords.resize(arr_f32.shape(0), arr_f32.shape(1));
+                std::memcpy(self.coords.data(), arr_f32.data(), arr_f32.size() * sizeof(float));
+            })
         .def_property("type", &LayerGeometry::getType, nullptr)
         .def(py::pickle(
                 [](py::object self) { // __getstate__
                     /* Return a tuple that fully encodes the state of the object */
-                    return py::make_tuple(self.attr("bid"), self.attr("mid"), self.attr("coords"),  self.attr("type"), self.attr("__dict__"));
+                    return py::make_tuple(self.attr("bid"), self.attr("mid"), self.attr("coords"), self.attr("type"), self.attr("__dict__"));
                 }, [](const py::tuple &t) {
                     if (t.size() != 5)
                         throw std::runtime_error("Invalid state!");
@@ -140,13 +159,17 @@ PYBIND11_MODULE(slm, m) {
                     auto p = std::make_shared<LayerGeometry>();
                     p->bid = t[0].cast<int>();
                     p->mid = t[1].cast<int>();
-                    p->coords = t[2].cast<Eigen::MatrixXf>();
+                    
+                    // Ensure float32 when unpickling
+                    py::array_t<float> arr = py::array_t<float>::ensure(t[2]);
+                    p->coords.resize(arr.shape(0), arr.shape(1));
+                    std::memcpy(p->coords.data(), arr.data(), arr.size() * sizeof(float));
+                    
                     auto py_state = t[3].cast<py::dict>();
                     return std::make_pair(p, py_state);
-
-               }
+            }
             ));
-
+            
     py::class_<slm::ContourGeometry, slm::LayerGeometry, std::shared_ptr<slm::ContourGeometry>>(m, "ContourGeometry", py::dynamic_attr())
         .def(py::init())
         .def(py::init<uint32_t, uint32_t>(), py::arg("mid"), py::arg("bid"))
